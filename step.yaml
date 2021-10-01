@@ -1,17 +1,17 @@
 version: '1.0'
 kind: step-type
 metadata:
-  name: moneylion/aws-secrets-manager
+  name: codefreshdemo/aws-secrets-manager
   title: Fetch secrets from AWS Secrets Manager
-  version: 1.0.0
+  version: 1.0.1
   isPublic: true
   description: Fetch secrets and export them to be used in subsequent steps.
   sources:
     - 'https://github.com/moneylion/cfstep-aws-secrets-manager'
   stage: incubating
   maintainers:
-    - name: Ling Cong Xiang
-      email: cling@moneylion.com
+    - name: Jesse Antoszyk
+      email: Jesse.Antoszyk@codefresh.io
   categories:
     - aws
     - secret management
@@ -22,11 +22,11 @@ metadata:
     url: 'https://d3f44cr96bpmfn.cloudfront.net/AWS-Secrets-Manager.svg'
     background: '#f4f4f4'
   examples:
-    - description: example-1
+    - description: Fetch secrets using AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
       workflow:
         FetchSecrets:
           title: Fetch secrets from AWS Secrets Manager
-          type: moneylion/aws-secrets-manager
+          type: codefreshdemo/aws-secrets-manager
           arguments:
             AWS_ACCESS_KEY_ID: ${{AWS_ACCESS_KEY_ID}}
             AWS_SECRET_ACCESS_KEY: ${{AWS_SECRET_ACCESS_KEY}}
@@ -39,8 +39,20 @@ metadata:
               - secret_arn: arn:aws:secret-1
                 key: password
                 store_in: PASSWORD
-  created_at: '2019-12-26T08:24:56Z'
-  updated_at: '2021-07-22T14:07:54.580Z'
+    - description: Fetch secret using service account IAM role
+      workflow:
+        FetchSecrets:
+          title: Fetch secrets from AWS Secrets Manager using service account IAM role
+          type: codefreshdemo/aws-secrets-manager
+          arguments:
+            AWS_DEFAULT_REGION: a-region-1
+            secrets:
+              - secret_arn: sercret-name
+                key: username
+                store_in: USERNAME
+              - secret_arn: sercret-name
+                key: password
+                store_in: PASSWORD
   latest: true
 spec:
   arguments: |-
@@ -51,31 +63,25 @@ spec:
       "additionalProperties": false,
       "patterns": [],
       "required": [
-        "AWS_ACCESS_KEY_ID",
-        "AWS_SECRET_ACCESS_KEY",
-        "AWS_DEFAULT_REGION",
-        "secrets"
+        "secrets",
+        "AWS_DEFAULT_REGION"
       ],
       "properties": {
         "AWS_ACCESS_KEY_ID": {
           "type": "string",
-          "description": "AWS access key ID.",
-          "default": "${{AWS_ACCESS_KEY_ID}}"
+          "description": "AWS access key ID. Takes priority over pod's IAM role if set"
         },
         "AWS_SECRET_ACCESS_KEY": {
           "type": "string",
-          "description": "AWS secret access key.",
-          "default": "${{AWS_SECRET_ACCESS_KEY}}"
+          "description": "AWS secret access key."
         },
         "AWS_DEFAULT_REGION": {
           "type": "string",
-          "description": "AWS region to operate in.",
-          "default": "${{AWS_DEFAULT_REGION}}"
+          "description": "AWS region to operate in."
         },
         "AWS_IAM_ROLE_ARN": {
           "type": "string",
-          "description": "The ARN of AWS IAM role to assume.",
-          "default": "${{AWS_IAM_ROLE_ARN}}"
+          "description": "The ARN of AWS IAM role to assume."
         },
         "secrets": {
           "type": "array",
@@ -90,7 +96,7 @@ spec:
             "properties": {
               "secret_arn": {
                 "type": "string",
-                "description": "Full or partial ARN of the secret."
+                "description": "ARN or friendly name of the secret."
               },
               "key": {
                 "type": "string",
@@ -107,17 +113,18 @@ spec:
     }
   stepsTemplate: |-
     main:
-      name: moneylion/aws-secrets-manager
-      image: moneylioneng/cfstep-aws-secrets-manager:1.0.0
+      name: codefreshdemo/aws-secrets-manager
+      image: jcantosz/cfstep-aws-secrets-manager:1.0.1
       environment:
-        - 'AWS_ACCESS_KEY_ID=[[ .Arguments.AWS_ACCESS_KEY_ID ]]'
-        - 'AWS_SECRET_ACCESS_KEY=[[ .Arguments.AWS_SECRET_ACCESS_KEY ]]'
-        - 'AWS_DEFAULT_REGION=[[ .Arguments.AWS_DEFAULT_REGION ]]'
-        - 'AWS_IAM_ROLE_ARN=[[ .Arguments.AWS_IAM_ROLE_ARN ]]'
+      [[ range $key, $val := .Arguments ]]
+        [[- if ne $key "secrets" ]]
+        - '[[ $key ]]=[[ $val ]]'
+        [[- end ]]
+      [[- end ]]
       [[ $secrets := slice ]]
       [[ range $secret := .Arguments.secrets ]]
-      [[ $secret_str := (join (slice $secret.secret_arn $secret.key $secret.store_in) "#") ]]
-      [[ $secrets = (append $secret_str $secrets) ]]
+        [[ $secret_str := (join (slice $secret.secret_arn $secret.key $secret.store_in) "#") ]]
+        [[ $secrets = (append $secret_str $secrets) ]]
       [[ end ]]
         - 'SECRETS=[[ join $secrets "|" | trimSpace ]]'
   delimiters:

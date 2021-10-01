@@ -1,4 +1,5 @@
 # Codefresh Step for AWS Secrets Manager
+Adapted from: [moneylion/cfstep-aws-secrets-manager](https://github.com/moneylion/cfstep-aws-secrets-manager)
 
 Codefresh Step to fetch secrets from AWS Secrets Manager.
 
@@ -12,7 +13,7 @@ Include this Step in your pipeline, for example:
 steps:
   FetchSecrets:
     title: Fetch secrets from AWS Secrets Manager
-    type: moneylion/aws-secrets-manager
+    type: aws-secrets-manager
     arguments:
       AWS_ACCESS_KEY_ID: ${{AWS_ACCESS_KEY_ID}}
       AWS_SECRET_ACCESS_KEY: ${{AWS_SECRET_ACCESS_KEY}}
@@ -40,7 +41,7 @@ This fetches the secrets, and places the referenced values into the environment 
 
 Specify the list of secrets to be fetched, under the `secrets` input parameter. Each secret is a map containing:
 
-  - Secret's ARN
+  - Secret's ARN (or friendly name)
   - JSON object key
   - Environment variable to store the referenced secret value in
 
@@ -69,8 +70,7 @@ arguments:
 Fetches the secret, retrieves the JSON value under the key `username`, and store that value in the `USERNAME` environment variable. `$USERNAME` will now contain the value `admin`.
 
 ### Authenticating with AWS
-
-The Step picks up AWS configurations via these pipeline variables:
+This step can either authenticate with AWS using a pod's IAM role or via these pipeline variables:
 
   - `AWS_ACCESS_KEY_ID`
   - `AWS_SECRET_ACCESS_KEY`
@@ -91,65 +91,3 @@ arguments:
       key: username
       store_in: USERNAME
 ```
-
-## Development note
-
-Ensure the following is installed:
-
-  - Docker
-  - Codefresh CLI
-
-### Setting up Codefresh CLI
-
-Create a Codefresh API key under the MoneyLion Codefresh account. The key should have the following scopes:
-
-  - `step-type:write`, for creating and updating steps on Codefresh.
-  - `build:read`
-  - `pipeline:read`; and
-  - `pipeline:run`, for the convenience of triggering pipeline runs directly from local machine.
-
-Once the API key is ready, create an authentication context on your local machine:
-
-```
-codefresh auth create-context moneylion --api-key <CODEFRESH_API_KEY>
-```
-
-### Working with development version of the Step
-
-The Step has two versions, a development version, and an official release version. Ensure you are always working with the development version while you are testing your changes.
-
-Whenever code changes are made, you can build the Docker image and update the development Step by running this command:
-
-```
-make dev
-```
-
-To test the Step, you can conveniently run a pipeline that uses the step, from your local machine:
-
-```
-make testdev
-```
-
-## Publishing
-
-Steps for publishing the Step:
-
-  1. Bump the Step version and Docker image version in [step.yaml](./step.yaml).
-
-  1. Make a commit.
-
-  1. Create an annotated tag.
-
-  1. Push the commits and tags.
-
-  1. Build a new tagged Docker image and update the step (update `x.x.x` to the actual version):
-
-      ```
-      TAG=x.x.x make prod
-      ```
-
-  1. Test the new version of Step:
-
-      ```
-      make testprod
-      ```
