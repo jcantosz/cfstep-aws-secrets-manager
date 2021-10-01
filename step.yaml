@@ -4,7 +4,7 @@ metadata:
   name: codefreshdemo/aws-secrets-manager
   title: Fetch secrets from AWS Secrets Manager
   version: 1.0.1
-  isPublic: true
+  isPublic: false
   description: Fetch secrets and export them to be used in subsequent steps.
   sources:
     - 'https://github.com/moneylion/cfstep-aws-secrets-manager'
